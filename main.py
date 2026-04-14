@@ -7,9 +7,9 @@ from langchain_openai import ChatOpenAI
 load_dotenv(override=True)
 
 llm = ChatOpenAI(
-    model="coding-glm-5.1-free",
-    base_url=os.getenv("BASE_URL"),
-    api_key=os.getenv("API_KEY"),
+    model=os.getenv("LLM_MODEL_ID"),
+    base_url=os.getenv("LLM_BASE_URL"),
+    api_key=os.getenv("LLM_API_KEY"),
     temperature=0.7
 )
 
