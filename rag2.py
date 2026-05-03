@@ -24,6 +24,7 @@ text_splitter_recursive = RecursiveCharacterTextSplitter.from_language(
     language=Language.PYTHON, chunk_size=500, chunk_overlap=50
 )
 
+# use huggingface embedding
 embeddings = HuggingFaceEmbeddings(
     model_name="BAAI/bge-small-zh-v1.5",
     model_kwargs={"device": "cpu"},
