@@ -16,6 +16,7 @@ chunks = text_splitter.split_documents(documents)
 print(f"文本被切分为 {len(chunks)} 个块。\n")
 print("--- 前5个块内容示例 ---")
 
+# loop for get chunk
 for i, chunk in enumerate(chunks[:5]):
     print("=" * 60)
     print(f'块 {i+1} (长度: {len(chunk.page_content)}): "{chunk.page_content}"')
