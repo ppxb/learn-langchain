@@ -20,6 +20,7 @@ for i, chunk in enumerate(chunks[:5]):
     print("=" * 60)
     print(f'块 {i+1} (长度: {len(chunk.page_content)}): "{chunk.page_content}"')
 
+# use recursive splitter
 text_splitter_recursive = RecursiveCharacterTextSplitter.from_language(
     language=Language.PYTHON, chunk_size=500, chunk_overlap=50
 )
