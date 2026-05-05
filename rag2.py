@@ -32,7 +32,6 @@ embeddings = HuggingFaceEmbeddings(
     encode_kwargs={"normalize_embeddings": True},
 )
 
-# use semantic splitter
 text_splitter_semantic = SemanticChunker(
     embeddings, breakpoint_threshold_type="percentile"
 )
