@@ -16,6 +16,7 @@ loader = UnstructuredMarkdownLoader(markdown_path)
 docs = loader.load()
 
 text_splitter = RecursiveCharacterTextSplitter()
+
 chunks = text_splitter.split_documents(docs)
 
 embeddings = HuggingFaceEmbeddings(
