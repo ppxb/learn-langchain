@@ -48,6 +48,7 @@ few_shots_prompt = FewShotPromptTemplate(
     input_variables=["new_subject"],
 )
 
+# format prompt
 formatted_prompt = few_shots_prompt.format(new_subject="LangChain")
 
 print("少样本提示词：")
