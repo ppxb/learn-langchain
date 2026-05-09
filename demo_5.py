@@ -40,6 +40,7 @@ example_prompt = PromptTemplate(
     input_variables=["subject", "method"], template=example_template
 )
 
+# build few shots prompt
 few_shots_prompt = FewShotPromptTemplate(
     examples=examples,
     example_prompt=example_prompt,
