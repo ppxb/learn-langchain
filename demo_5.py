@@ -36,6 +36,7 @@ example_template = """
 学习方法：{method}
 """
 
+# set example prompt
 example_prompt = PromptTemplate(
     input_variables=["subject", "method"], template=example_template
 )
