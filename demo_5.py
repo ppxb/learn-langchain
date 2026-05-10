@@ -10,14 +10,12 @@ load_dotenv()
 API_KEY = os.getenv("API_KEY")
 BASE_URL = os.getenv("BASE_URL")
 
-if not API_KEY:
-    raise ValueError("API_KEY not set")
-
 chat_model = ChatOpenAI(
     api_key=SecretStr(API_KEY),
     base_url=BASE_URL,
-    model="z-ai/glm4.7",
+    model="glm5",
     temperature=0.3,
+    default_headers={"User-Agent": "curl/8.0"},
 )
 
 examples = [
