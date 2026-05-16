@@ -10,6 +10,7 @@ load_dotenv()
 API_KEY = os.getenv("API_KEY")
 BASE_URL = os.getenv("BASE_URL")
 
+# create a llm chat model
 chat_model = ChatOpenAI(
     api_key=SecretStr(API_KEY),
     base_url=BASE_URL,
