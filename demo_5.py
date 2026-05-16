@@ -53,6 +53,7 @@ formatted_prompt = few_shots_prompt.format(new_subject="LangChain")
 print("少样本提示词：")
 print(formatted_prompt)
 
+# print llm chat model output
 result = chat_model.invoke([{"role": "user", "content": formatted_prompt}])
 
 print("\n生成的LangChain学习方法：")
