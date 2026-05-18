@@ -3,7 +3,6 @@ import os
 from dotenv import load_dotenv
 from langchain.agents import create_agent
 from langchain_community.agent_toolkits import FileManagementToolkit
-from langchain_core.tools import tool
 from langchain_openai import ChatOpenAI
 from pydantic import BaseModel, Field, SecretStr
 
