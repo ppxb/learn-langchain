@@ -1,15 +1,16 @@
 import os
+from typing import Any
 
 from dotenv import load_dotenv
-from langchain_core.chat_history import (
-    BaseChatMessageHistory,
-    InMemoryChatMessageHistory,
-)
-from langchain_core.messages import trim_messages
-from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
-from langchain_core.runnables import RunnablePassthrough, RunnableWithMessageHistory
+from langchain.agents import AgentState, create_agent
+from langchain.agents.middleware import before_model
+from langchain_core.messages import RemoveMessage
+from langchain_core.runnables import RunnableConfig
 from langchain_experimental.tools import PythonREPLTool
 from langchain_openai import ChatOpenAI
+from langgraph.checkpoint.memory import InMemorySaver
+from langgraph.graph.message import REMOVE_ALL_MESSAGES
+from langgraph.runtime import Runtime
 from pydantic import SecretStr
 
 load_dotenv()
@@ -27,88 +28,74 @@ llm = ChatOpenAI(
     temperature=0,
 )
 
-calc_tool = PythonREPLTool()
+tools = [PythonREPLTool()]
 
-# 1. 绑定工具
-llm_with_tools = llm.bind_tools([calc_tool])
+MAX_MESSAGES = 10
 
-# 2. 滚动窗口记忆
-msg_trimmer = trim_messages(
-    strategy="last",
-    max_tokens=10,
-    token_counter=len,
-    allow_partial=False,
-    start_on="human",
+
+@before_model
+def trim_history(state: AgentState, runtime: Runtime) -> dict[str, Any] | None:
+    messages = state["messages"]
+    if len(messages) <= MAX_MESSAGES:
+        return None
+
+    first_message = messages[0]
+    recent = messages[-MAX_MESSAGES:]
+    if recent and recent[0].type != "human":
+        recent = messages[-(MAX_MESSAGES - 1) :]
+
+    return {
+        "messages": [
+            RemoveMessage(id=REMOVE_ALL_MESSAGES),
+            first_message,
+            *recent,
+        ]
+    }
+
+
+checkpointer = InMemorySaver()
+
+agent = create_agent(
+    model=llm,
+    tools=tools,
+    system_prompt=(
+        "你是一名贴心的个人助手。"
+        "如果用户提出涉及数学计算的问题，务必生成对应的 Python 代码并调用计算工具获取准确结果，"
+        "不要自行猜算。最终以自然、友好的语言回复用户。"
+    ),
+    middleware=[trim_history],
+    checkpointer=checkpointer,
 )
 
-# 3. 构造智能体 LCEL 链与 Prompt
-prompt = ChatPromptTemplate.from_messages(
-    [
-        (
-            "system",
-            "你是一名贴心的个人小助手。如果用户提出的问题涉及数学计算，请务必生成对应的代码并调用计算工具来获得准确结果，不要自己盲目计算。",
-        ),
-        MessagesPlaceholder(variable_name="chat_history"),
-        ("human", "{input}"),
-    ]
-)
 
+def chat(user_input: str, thread_id: str = "default") -> str:
+    config: RunnableConfig = {"configurable": {"thread_id": thread_id}}
+    response = agent.invoke({"messages": user_input}, config)
+    return response["messages"][-1].content
 
-def tool_chain(model_output):
-    """拦截LLM的输出，如果是tool_calls则执行工具，否则直接返回文本"""
-    if model_output.tool_calls:
-        tool_call = model_output.tool_calls[0]
-        result = calc_tool.run(tool_call["args"]["__arg1"])
-        return llm.invoke(
-            f"用户问题：{tool_call['args']['__arg1']}\n计算结果为：{result}\n请帮我用自然语言友好地告知用户。"
-        )
-    return model_output
-
-
-chain = (
-    RunnablePassthrough.assign(
-        chat_history=lambda x: msg_trimmer.invoke(x["chat_history"])
-    )
-    | prompt
-    | llm_with_tools
-    | tool_chain
-)
-
-session_store = {}
-
-
-def get_session_history(session_id: str) -> BaseChatMessageHistory:
-    if session_id not in session_store:
-        session_store[session_id] = InMemoryChatMessageHistory()
-    return session_store[session_id]
-
-
-configurable_chain = RunnableWithMessageHistory(
-    runnable=chain,
-    get_session_history=get_session_history,
-    input_messages_key="input",
-    history_messages_key="chat_history",
-)
 
 if __name__ == "__main__":
-    session_id = "user_chat_001"
-    print("===== 基于 LangChain 最新特性构建的智能助手 =====")
-    print("✨ 特性：LLM 原生 Tool Calling + trim_messages 动态窗口管理")
-    print("输入 'q' 退出对话\n")
+    thread_id = "user_chat_001"
+    print("=" * 54)
+    print("  DeepSeek V4 智能助手 · LangChain 1.x")
+    print("=" * 54)
+    print("输入 'q' 退出\n")
 
     while True:
-        user_input = input("你：")
-        if user_input.lower() in ["q", "quit", "exit"]:
+        try:
+            user_input = input("你：").strip()
+        except EOFError, KeyboardInterrupt:
+            print("\n助手：再见！")
+            break
+
+        if not user_input:
+            continue
+        if user_input.lower() in {"q", "quit", "exit"}:
             print("助手：再见！")
             break
-        if not user_input.strip():
-            continue
 
         try:
-            response = configurable_chain.invoke(
-                {"input": user_input},
-                config={"configurable": {"session_id": session_id}},
-            )
-            print(f"助手：{response.content}\n")
+            reply = chat(user_input, thread_id)
+            print(f"助手：{reply}\n")
         except Exception as e:
             print(f"助手：[遇到了一点小麻烦] {e}\n")
