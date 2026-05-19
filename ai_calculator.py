@@ -7,6 +7,7 @@ from langchain_core.chat_history import (
     InMemoryChatMessageHistory,
 )
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain_core.runnables import RunnableLambda, RunnableWithMessageHistory
 from langchain_experimental.tools import PythonREPLTool
 from langchain_openai import ChatOpenAI
 from pydantic import SecretStr
@@ -94,3 +95,14 @@ def get_window_session_history(session_id: str) -> BaseChatMessageHistory:
     if total_messages > 2 * WINDOW_SIZE:
         history.messages = history.messages[-2 * WINDOW_SIZE :]
     return history
+
+
+chain = RunnableLambda(judge_and_calc) | prompt | llm
+
+chain_with_window_memory = RunnableWithMessageHistory(
+    runnable=chain,
+    get_session_history=get_window_session_history,
+    input_messages_key="input",
+    history_messages_key="chat_history",
+    output_messages_key="output",
+)
