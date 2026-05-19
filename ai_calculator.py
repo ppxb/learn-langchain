@@ -106,3 +106,22 @@ chain_with_window_memory = RunnableWithMessageHistory(
     history_messages_key="chat_history",
     output_messages_key="output",
 )
+
+if __name__ == "__main__":
+    session_id = "student_001"
+    print("===== 带窗口记忆的数学计算智能助手 =====")
+    print("支持：多轮对话、仅保留最近2轮记忆、自动数学计算")
+    print("输入'退出'结束对话\n")
+
+    while True:
+        user_input = input("你：")
+        if user_input in ["退出", "quit", "q"]:
+            print("再见")
+            break
+
+        response = chain_with_window_memory.invoke(
+            {"input": user_input, "window_size": WINDOW_SIZE},
+            config={"configurable": {"session_id": session_id}},
+        )
+
+        print(f"助手：{response.content}\n")
